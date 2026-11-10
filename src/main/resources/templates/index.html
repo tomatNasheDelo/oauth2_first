@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OAuth 2.0 — GitHub demo</title>
+  <style>
+    :root { font-family: system-ui, sans-serif; color: #172033; background: #f3f6fb; }
+    body { margin: 0; }
+    main { width: min(680px, calc(100% - 32px)); margin: 48px auto; }
+    .card { padding: clamp(24px, 6vw, 42px); background: white; border: 1px solid #dce4ef; border-radius: 18px; box-shadow: 0 15px 50px #12234416; }
+    h1 { margin-top: 0; color: #172554; }
+    p { line-height: 1.65; color: #475569; }
+    .steps { padding-left: 22px; color: #475569; line-height: 1.8; }
+    .profile { display: flex; align-items: center; gap: 18px; margin: 24px 0; padding: 18px; background: #f8fafc; border-radius: 12px; }
+    .profile img { width: 72px; height: 72px; border-radius: 50%; }
+    .profile p { margin: 4px 0; }
+    a.button, button { display: inline-block; padding: 12px 18px; border: 0; border-radius: 9px; background: #172554; color: white; font: inherit; text-decoration: none; cursor: pointer; }
+    form { display: inline; }
+    .secondary { background: #e2e8f0 !important; color: #172033 !important; }
+    code { padding: 2px 5px; background: #f1f5f9; border-radius: 4px; }
+    .note { font-size: .9rem; }
+  </style>
+</head>
+<body>
+<main>
+  <section class="card">
+    <h1>Первое знакомство с OAuth 2.0</h1>
+    <p>Пример OAuth 2.0 Authorization Code: Spring перенаправит вас на GitHub, получит разрешение и запросит публичный профиль. Отдельный frontend и база данных не используются.</p>
+
+    <div th:if="${login == null}">
+      <h2>Поток авторизации</h2>
+      <ol class="steps">
+        <li>Нажмите кнопку — приложение отправит вас на GitHub.</li>
+        <li>GitHub покажет страницу разрешения доступа.</li>
+        <li>После согласия GitHub вернёт браузер в Spring-приложение.</li>
+        <li>Spring обменяет authorization code на access token и прочитает профиль.</li>
+      </ol>
+      <a class="button" href="/oauth2/authorization/github">Продолжить через GitHub</a>
+    </div>
+
+    <div th:if="${login != null}">
+      <h2>Авторизация успешна</h2>
+      <p>Spring Security установил сессию и получил профиль через GitHub API.</p>
+      <div class="profile">
+        <img th:src="${avatarUrl}" alt="Аватар GitHub">
+        <div>
+          <p><strong th:text="${name != null ? name : login}"></strong></p>
+          <p>GitHub login: <code th:text="${login}"></code></p>
+          <a th:href="${profileUrl}" target="_blank" rel="noreferrer">Открыть профиль</a>
+        </div>
+      </div>
+      <form method="post" action="/logout"><button class="secondary" type="submit">Выйти</button></form>
+    </div>
+
+    <p class="note">Нужны GitHub OAuth App credentials. Client secret храните в переменной окружения, никогда не добавляйте его в Git.</p>
+  </section>
+</main>
+</body>
+</html>

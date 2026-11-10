@@ -1,0 +1,74 @@
+Детальная инструкция: OAuth2 GitHub Client demo
+===============================================
+
+Что изучаем
+-----------
+
+Небольшой Spring Boot Java web app как OAuth2 Client. Пользователь через Authorization Code flow разрешает приложению читать базовый GitHub профиль. Отдельный frontend и база данных не используются; Thymeleaf отдаёт страницу, HTTP session поддерживается Spring Security.
+
+Элементы проекта
+----------------
+
+- `build.gradle.kts` — Java 17, Spring Boot Web, Thymeleaf и `spring-boot-starter-oauth2-client`.
+- `OAuth2DemoApplication.java` — точка входа приложения.
+- `SecurityConfiguration.java` — публичная главная страница, OAuth2 login и logout; остальные маршруты требуют аутентификации.
+- `HomeController.java` — передаёт атрибуты GitHub профиля в шаблон.
+- `src/main/resources/application.yml` — OAuth registration/provider settings; client id и secret читаются из окружения.
+- `src/main/resources/templates/index.html` — login link и карточка профиля.
+- `.env.example` — имена переменных без реальных секретов.
+
+Шаг 1. Создать OAuth App GitHub
+--------------------------------
+
+GitHub → Settings → Developer settings → OAuth Apps → New OAuth App:
+
+- Homepage URL: `http://localhost:8080`
+- Authorization callback URL: `http://localhost:8080/login/oauth2/code/github`
+
+После создания возьмите Client ID и сгенерируйте Client Secret. Никому не публикуйте secret и не добавляйте его в Git.
+
+Шаг 2. Запустить Spring Boot
+----------------------------
+
+Требуются JDK 17+ и Gradle 8.x. В корне репозитория задайте credentials и запустите:
+
+```bash
+export GITHUB_CLIENT_ID='ваш-client-id'
+export GITHUB_CLIENT_SECRET='ваш-client-secret'
+gradle bootRun
+```
+
+Пример для PowerShell:
+
+```powershell
+$env:GITHUB_CLIENT_ID = "ваш-client-id"
+$env:GITHUB_CLIENT_SECRET = "ваш-client-secret"
+gradle bootRun
+```
+
+Команда только для текущей shell-сессии; после закрытия терминала переменные нужно задать снова. Можно скопировать `.env.example` в `.env` для собственной локальной настройки, но Spring Boot сам по себе не загружает `.env` автоматически. Не коммитьте `.env`.
+
+Шаг 3. Пройти flow
+------------------
+
+Откройте `http://localhost:8080`, нажмите «Продолжить через GitHub», войдите в GitHub и подтвердите разрешение. GitHub вернёт браузер на callback. Spring Security обменяет code на access token и получит профиль с `https://api.github.com/user`. Страница отобразит login, имя и аватар. Кнопка «Выйти» инвалидирует локальную сессию.
+
+OAuth2 endpoints
+----------------
+
+- Начало авторизации: `GET /oauth2/authorization/github`
+- Callback (зарегистрирован в OAuth App): `GET /login/oauth2/code/github`
+- Публичная стартовая страница: `GET /`
+- Logout: `POST /logout` (форма в шаблоне отправляет POST)
+
+Здесь GitHub OAuth App использует OAuth 2.0 Authorization Code; OIDC ID token не выдаётся. OAuth 2.0 делегирует API-доступ, а не определяет стандарт аутентификации пользователя. Урок демонстрирует GitHub-профиль как простой наблюдаемый результат.
+
+Диагностика
+-----------
+
+- `redirect_uri_mismatch`: проверь callback URL в настройке GitHub OAuth App — он должен точно совпадать с `http://localhost:8080/login/oauth2/code/github`.
+- `invalid_client`: проверь Client ID/Secret и перезапусти приложение с актуальными переменными.
+- Ошибка при старте/redirect: проверь, что обе переменные окружения заданы; значения-заглушки не являются credentials.
+- Не публикуй access token, client secret или cookie сессии в логах/репозитории.
+
+Для production необходимы HTTPS, безопасное хранение и ротация секретов, корректные cookie/security headers и подходящая защита от CSRF; настройки этого localhost-примера не являются production-рецептом.
